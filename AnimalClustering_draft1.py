@@ -34,11 +34,11 @@ def readCSVFileIntoMatrix(filename, latitudeColumn, longitudeColumn):
 			dataReader = csv.reader(csvFile, delimiter=',')
 			i = 0
 			for row in dataReader:
-				if (i==0): #skip first line
+				if (i==0):
 					i += 1
 				else:
-					longitude = row[longitudeColumn]
-					latitude = row[latitudeColumn]
+					longitude = row[27]
+					latitude = row[26]
 					dataMatrix[i][0] = latitude
 					dataMatrix[i][1] = longitude
 					i += 1
@@ -638,44 +638,15 @@ def plotCostVersusK(dataMatrix, clusteringAlgorithm, costFunction, minK, maxK, s
 	plt.show()
 
 
-def getSmallSubsetMatrix(BigMatrix, newSize):
-	smallMatrix = np.zeros((newSize, 2))
-	iterIncrement = len(BigMatrix) / newSize
-	j = 0
-	for i in range(0, len(smallMatrix)):
-		smallMatrix[i] = BigMatrix[j]
-		j += iterIncrement
-	return smallMatrix
-		
+
 		
 
 #"main" section:
-MammalsMatrix1 = readCSVFileIntoMatrix("pointCloud/Mammals5(1).csv", 0, 1)
-MammalsMatrix2 = readCSVFileIntoMatrix("pointCloud/Mammals5(2).csv", 0, 1)
-AmphibiansMatrix = readCSVFileIntoMatrix("pointCloud/Amphibian5.csv", 0, 1)
-AllMatricesList = list([MammalsMatrix1, MammalsMatrix2, AmphibiansMatrix])
+ReptilesMatrix = readCSVFileIntoMatrix("Reptiles.txt", 27, 28)
+TerrestrialMammalsMatrix = readCSVFileIntoMatrix("TerrestrialMammals.txt", 27, 28)
+AmphibiansMatrix = readCSVFileIntoMatrix("Amphibians.txt", 27, 28)
+AllMatricesList = list([ReptilesMatrix, TerrestrialMammalsMatrix, AmphibiansMatrix])
 AllAnimalsMatrix = combineMatrices(AllMatricesList)
-subsetSize = 200
-SmallSubsetMatrix = getSmallSubsetMatrix(AllAnimalsMatrix, subsetSize)
-
-dotRadius = 8
-singleLinkClusters = runHierarchicalClustering(SmallSubsetMatrix, singleLink, subsetSize, 10)
-plotClusters(singleLinkClusters, SmallSubsetMatrix, dotRadius)
-
-completeLinkClusters = runHierarchicalClustering(SmallSubsetMatrix, completeLink, subsetSize, 10)
-plotClusters(completeLinkClusters, SmallSubsetMatrix, dotRadius)
-
-meanLinkClusters = runHierarchicalClustering(SmallSubsetMatrix, meanLink, subsetSize, 10)
-plotClusters(meanLinkClusters, SmallSubsetMatrix, dotRadius)
-
-print getKMeansCost(meanLinkClusters, SmallSubsetMatrix)
-
-
-#ReptilesMatrix = readCSVFileIntoMatrix("Reptiles.txt", 27, 28)
-#TerrestrialMammalsMatrix = readCSVFileIntoMatrix("TerrestrialMammals.txt", 27, 28)
-#AmphibiansMatrix = readCSVFileIntoMatrix("Amphibians.txt", 27, 28)
-#AllMatricesList = list([ReptilesMatrix, TerrestrialMammalsMatrix, AmphibiansMatrix])
-#AllAnimalsMatrix = combineMatrices(AllMatricesList)
 
 
 #plotCostVersusK(AllAnimalsMatrix, gonzalez, getKMeansCost, 0, 11, 5)
@@ -689,9 +660,9 @@ print getKMeansCost(meanLinkClusters, SmallSubsetMatrix)
 ###printClusters(singleLinkClusters, C1DataMatrix)
 #plotClusters(singleLinkClusters, ReptilesMatrix, 10)
 
-#k=40
-#dotRadius = 0.3
-#initialCenter = np.random.randint(0,len(AllAnimalsMatrix))
+k=40
+dotRadius = 0.3
+initialCenter = np.random.randint(0,len(AllAnimalsMatrix))
 #gonzalezCenters, phi = gonzalez(AllAnimalsMatrix, k, initialCenter)
 ###printPointsFromIndices(gonzalezCenters, AllAnimalsMatrix)
 #dictOfClusters, listOfClusteredIndices = getListOfClusteredIndicesFromPhi(phi)
@@ -716,17 +687,17 @@ print getKMeansCost(meanLinkClusters, SmallSubsetMatrix)
 #
 #print compareKPPtoGonzalez(ReptilesMatrix, numTrials, k, initialCenter)
 
-#k=40
-#threshold = 128
+k=40
+threshold = 128
 #startingCenters = list()
 #for i in range (0,k):
 #	startingCenters.append(i)
 #startingCenters = set(startingCenters)
 #print startingCenters
-#startingCenters, phi = gonzalez(AllAnimalsMatrix, k, initialCenter)
-#dictOfClusters = lloyd(startingCenters, AllAnimalsMatrix, threshold)
-#listOfClusters = getListOfClusteredIndicesFromDict(dictOfClusters)
-#plotClusters(listOfClusters, AllAnimalsMatrix, dotRadius)
+startingCenters, phi = gonzalez(AllAnimalsMatrix, k, initialCenter)
+dictOfClusters = lloyd(startingCenters, AllAnimalsMatrix, threshold)
+listOfClusters = getListOfClusteredIndicesFromDict(dictOfClusters)
+plotClusters(listOfClusters, AllAnimalsMatrix, dotRadius)
 #print getKMeansCostForPointKeys(dictOfClusters, ReptilesMatrix)
 #print dictOfClusters.keys()
 

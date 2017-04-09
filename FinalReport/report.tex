@@ -45,10 +45,12 @@
 		
 		Another shortcoming of the data is that information about red-list status was missing. (Red-list status is essentially whether a species is endangered or not.) To supply the needed information, the IUCN database was queried for each species represented by polygons. After that the clustering algorithms were able to do clustering on the whole data set, or just polygons associated with species on the red-list. 
 	
-	\section{Class Methods}
-		Using ArcMap software, I computed the centroids of the polygons that represent the ranges of terrestrial mammal, reptile, and amphibian species in the IUCN shapefiles. Using my own Python code, I turned the latitude and longitude coordinates of these centroids into a 2-dimensional matrix and performed various kinds of clustering, trying to find areas of especially high density of endangered species.
-	
-		To measure distance, I used the great-circle distance as given by d from the Haversine formula, where $\phi$ latitude, $\lambda$ is longitude, and $R$ is the radius of the earth.
+	\section{Using Clustering to Identify Hotspots}
+		In this section, our goal was to determine whether the clustering techniques we learned in class could divide the ranges of endangered species into biologically reasonable groups. We assessed whether the clusters seemed biologically reasonable or not by comparing them to the areas of high biodiversity identified in the influential paper ``Biodiversity Hotspots for Conservation Priorities'' \cite{Myers 00}. Our conclusion was that Gonzalez clustering, simply by greedily choosing each new center to maximize the geographic distance from previous centers, was able to find biologically meaningful groups with a surprising degree of accuracy, though it also made notable errors, particularly where Myers's hotspots are located close together (in which case Gonzalez tended to combine them), or the density of endangered species was low (in which case Gonzalez tended to assign the species to clusters centered far away).
+		 
+		Using ArcMap software, we computed the centroids of the polygons that represent the ranges of terrestrial animals (mammals, amphibians, and reptiles) in the IUCN Endangered Species Red List shapefiles, making sure that the centroid was adjusted if necessary to lie within the polygon. Using our own Python code, we turned the latitude and longitude coordinates of these centroids into a 2-dimensional matrix and performed various kinds of clustering.
+				
+		To measure distance, we used the great-circle distance as given by d from the Haversine formula, where $\phi$ latitude, $\lambda$ is longitude, and $R$ is the radius of the Earth.
 		\begin{equation}
 			a = \sin^2 \frac{\Delta\phi}{2} + \cos \phi_1 (\cos \phi_2)  (\sin^2 \frac{\Delta\lambda}{2})
 		\end{equation}
@@ -61,18 +63,48 @@
 			d = R*c
 		\end{equation}
 	
-		Since the Earth is not perfectly spherical, the great-circle distance may be wrong by up to approximately 0.3\% or 22km according to the analysis at http://gis.stackexchange.com/q/25494. In their article “Global Patterns of Terrestrial Vertebrate Diversity and Conservation,” Jenkins et al set 100km as a reasonable lower limit for “fine-grained spatial analysis” in this field.
+		Since the Earth is not perfectly spherical, the great-circle distance may be wrong by up to approximately 0.3\% or 22 km, according to user ``whuber's'' detailed analysis on gis.stackexchange \cite{whuber 12}. However, this error seems acceptable since in ``Global Patterns of Terrestrial Vertebrate Diversity and Conservation,'' Jenkins et al set 100 km as a reasonable lower limit for ``fine-grained spatial analysis'' in this field \cite{Jenkins 13}.
 	
-		Hierarchical clustering ran too slowly for the full dataset (74,529 points) or for amphibians alone (18,694 points). K-means++ worked for small numbers of clusters (20 or less) but became obnoxiously slow for larger k. Lloyd’s was also too slow for more than about 20 clusters.
-	
-		Gonzalez clustering processed the entire dataset in less than 10 seconds. Using the “elbow” principle, I chose k=40 (see Figure 1). The resulting clusters (see Figure 2) seem surprisingly reasonable, often lining up with the “25 Global Biodiversity Hotspots” shown in Figure 3. For instance, Gonzalez gives Madagascar, New Zealand, and the Caucasus Mountains their own clusters, separates the Pacific Northwest from the rest of the Rockies, and divides up the Amazonian, Congo, and Indonesian rainforests in roughly canonical ways. Also, the Aleutian and Canary Islands, Newfoundland, and Hawaii are given their own clusters, and the Andes, Himalayas, and other mountain chains are not too broken up. 
-	
-		On the other hand, areas with low density of endangered species, such as Siberia or the Sahara Desert, seem to get partitioned in fairly meaningless ways. Also, my clusters assign the Mediterranean Basin, somewhat oddly, to 3 different centers. 
-	
-		But if my clustering inspires confidence by reflecting the common knowledge in some areas, then perhaps where it deviates from the usual boundaries, the results should not be immediately dismissed. They might provide questions for further research. For instance, is there really a significant difference in the species and habitats of the western half of the Mediterranean Basin versus the half that lies to the east of Sicily? What (if anything) justifies the separation of India from Indochina, Scotland from the rest of the U.K., or the area along the coast of West Africa from the Congo River Basin at a right angle to the south?
-	
+		Hierarchical clustering ran too slowly for the full centroid dataset (74,529 points) or for amphibians alone (18,694 points). K-means++ worked for small numbers of clusters (20 or less) but became obnoxiously slow for larger k. Lloyd's was also too slow for more than about 20 clusters. 
+		
+		Gonzalez clustering, however, processed the entire dataset in less than 10 seconds. Using the “elbow principle” (see Figure 3) and a subjective sense of how many clusters looked good on the final map (adopting a scale similar to Myers's), we chose k=40, and obtained the following clusters:
+
+		\begin{figure}[H]
+			\centering
+			\includegraphics[width=11cm]{gonzalez.png}
+			\caption{Gonzalez clusters with k = 40}
+		\end{figure}
+		
+		\begin{figure}[H]
+			\centering
+			\includegraphics[width=11cm]{myers.png}
+			\caption{Myers's 25 Biodiversity Hotspots}
+		\end{figure}
+		
+		\begin{figure}[H]
+			\centering
+			\includegraphics[width=7cm]{kMeansCost.png}
+			\caption{k-means cost in meters for Gonzalez}
+		\end{figure}
+			
+		These clusters seem surprisingly reasonable, rarely breaking up Myers's biodiversity hotspots (see Figure 2). According to Myers, ``[As many as] 35\% of all species in four vertebrate groups are confined to 25 hotspots comprising only 1.4\% of the land surface of the Earth...The hotspots’ boundaries have been determined by ‘biological commonalities’. Each of the areas features a separate biota or community of species that fits together as a biogeographic unit.'' It is interesting, then, that Gonzalez clustering, while taking into account nothing but geographic proximity, manages to pick out ``communities of species'' that are related in more biologically profound ways. For instance, Gonzalez, like Myers, assigns Madagascar, New Zealand, and the Caucasus Mountains to their own groups, separates the ``California Floristic Province'' from the rest of the Rockies, the ``West African Forests'' from the rest of Africa, and divides up the Indonesian Islands into three different groups, with the Philippines being mostly on their own. The Aleutian and Canary Islands, Newfoundland, and Hawaii are given their own clusters, and the Andes, Himalayas, and other mountain chains are not too broken up. 
+
+		Sometimes, however, Gonzalez doesn't break groups up enough. It is blind to Myers's ``Succulent Karoo,'' located right next to ``Cape Floristic Province,'' and fails to separate the ``Central Chile'' or ``Western Ecuador'' hotspots from the larger ``Mesoamerica'' or ``Tropical Andes'' groups, respectively. Elsewhere, Gonzalez separates too much, for instance, breaking the Mediterranean Basin into two clusters. It is also wrong that Gonzalez has divided Siberia into so many strips (as if coinciding with Russia's many time zones.) This is a consequence of the low density of endangered species in Siberia; the data points there tend to be drawn into the clusters of distant, more densely-populated areas. A similar problem occurs in northern Canada and the Sahara.
+
+		In summary, Gonzalez clustering provides a fast way to group endangered species in ways that make a surprising amount of biological sense. Since Gonzalez relies only on geographic distance, ``knowing'' nothing else about the animals, the explanation for why Gonzalez seems to be able to identify biological relationships must be that biological relationships are strongly conditioned by geographical proximity, and that the boundaries of terrestrial ecosystems are relatively discrete.
+		
+		Finally, we ran Gonzalez on the point cloud data (see Figure 4), even though our concern in this section has been the shape and location of clusters, not the density of species within them. In the point cloud, instead of having one point per species, each of the 534,809 points signifies the presence of any endangered species in the approximately 20 km by 20 km territory of which it is the center. On this expanded dataset, Gonzalez takes much longer (about 10 minutes), but the results are similar. Siberia and North America are still affected by arbitrary stripes. Species-poor areas, such as the Arabian, Sahara, and Central Asian deserts, show up even more dramatically (they're totally white.) The hotspots in the Pacific Northwest, Madagascar, New Zealand, and West African are still correctly identified, but the Mediterranean Basin is even more broken up, into 4 clusters rather than 2 (while Myers claims there should be only 1).
+		
+		In short, centroids seem to be a better modelling choice than the point cloud for locating hotspots, since their results are at least as good and they run much faster. One explanation for this is that a large proportion of endangered species in hotspots are unique to their areas; therefore, representing them by only one point, at the center of their habitat, should not result in as much loss of information as it would for more common species with larger or multiple ranges. 
+		
+		\begin{figure}[H]
+			\centering
+			\includegraphics[width=10cm]{gonzalezPointCloud.png}
+			\caption{Gonzalez clusters with k = 40 using the point cloud dataset}
+		\end{figure}
+
 	\section{Density Based Clustering}
-		In this section, we ask ''Where are areas of high biodiversity?'' and ''Where are areas of high levels of species endangerment?'' Since we are asking to find where areas of greater biodiversity are located, a density based clustering algorithm is a natural choice. Additionally, a paper on the topic \cite{Joshi 11} gives evidence that density based algorithms are good option for solving polygon clustering problems. Using the centroid data, the Haversine distance metric, and suggestions from the paper \cite{Joshi 11}, an implementation of a modified version of dbscan was created in C++.
+		In this section, we ask ``Where are areas of high biodiversity?'' and ``Where are areas of high levels of species endangerment?'' Since we are asking to find where areas of greater biodiversity are located, a density based clustering algorithm is a natural choice. Additionally, a paper on the topic \cite{Joshi 11} gives evidence that density based algorithms are good option for solving polygon clustering problems. Using the centroid data, the Haversine distance metric, and suggestions from the paper \cite{Joshi 11}, an implementation of a modified version of dbscan was created in C++.
 		\begin{tabbing}
 			Mod\= ifie\= d db\= scan algorithm:\\
 			\> Choose distance $\epsilon$ and number of points $minPts$\\
@@ -111,13 +143,13 @@
 		
 		\begin{figure}[H]
 			\centering
-			\includegraphics[width=20cm]{map.png}
+			\includegraphics[width=17cm]{map.png}
 			\caption{Heat map showing mammal density. Generated from depth of points on a grid overlaying the earth.}
 		\end{figure}
 		
 		\begin{figure}[H]
 			\centering
-			\includegraphics[width=10cm]{graph.png}
+			\includegraphics[width=8cm]{graph.png}
 			\caption{Persistence diagram of mammal density. Orange points have both high density $>100$ and high prominence $>75$. Red points have high density $>100$ and less prominence $<75$, $>10$.}
 		\end{figure}
 		
@@ -129,8 +161,15 @@
 		\beginrefs
 
 			\bibentry{IUCN 17} International Union for the Conservation of Nature. (2017) \emph{Spatial Data Download}. Retrieved from http://www.iucnredlist.org/technical-documents/spatial-data/
+			
+			\bibentry{Jenkins 13} Jenkins, Clinton N. et al (2013). Global Patterns of Terrestrial Vertebrate Diversity and Conservation	\emph{PNAS}, vol. 110, no. 28. http://www.pnas.org/content/110/28/E2602.full
 
 			\bibentry{Joshi 11} Joshi, D. (2011). Polygonal spatial clustering.  \emph{Computer Science and Engineering: Theses, Dissertations, and Student Research}, 16.
+			
+			\bibentry{Myers 00} Myers, Norman et al. (2000). Biodiversity Hotspots for Conservation Priorities	\emph{Nature}, vol. 403. http://www.nature.com/nature/journal/v403/n6772/full/403853a0.html
+			
+			\bibentry{Whuber 12} ``whuber'' from gis.stackexchange.com (2012). Answer to ``How Accurate is Approximating the Earth as a Sphere?''	\emph{stackexchange.com}, http://gis.stackexchange.com/a/25580. Accessed March, 2017. 
+
 
 		\endrefs
 	
