@@ -30,7 +30,7 @@ size_t writeCallback(char* buf, size_t size, size_t nmemb, void* up);
 int main() {
     CURL* curl;
     string begin = "http://apiv3.iucnredlist.org/api/v3/species/id/";
-    string end = "?token=c40f354d561a77d8110d7fc4fab248a0092e4b4f361cd0b1ac16b5cc64cbd669";
+    string end = "?token=";
     string id, url, assessment;
     int count = 0;
     char ch;
