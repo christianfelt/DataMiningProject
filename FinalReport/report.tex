@@ -36,12 +36,14 @@
 			\item Where are areas of high biodiversity?
 			\item Where are areas of high levels of species endangerment?
 		\end{itemize} 
-		We divided the work into two parts. Christian created centroids of each polygon and implemented clustering algorithms discussed in class. Jadon created a point cloud for the data, and explored density based clustering methods.
+		We divided the work into two parts. Christian created centroids of each polygon and implemented clustering algorithms discussed in class (Sections 2a, and 3). Jadon created a point cloud for the data, explored density based clustering methods, and developed a technique to identify density peaks and prominence (Sections 2b, and 4).
 	
 	\section{Data}
-		The data obtained was in the form of Esri shapefiles containing polygons. Each polygon was associated with a species identification number. These polygons were often large, diverse, complex, and overlapping. They proved to be unsuitable for our methods as they were. The first method used to mitigate these problems was to calculate centroids of the polygons using ArcMap software. The other method was to create an ordered set of points on the globe and find which were contained in the polygon, then use this point cloud for the clustering algorithms.
+	\subsection{Centroids}
+		The data obtained was in the form of Esri shapefiles containing polygons. Each polygon was associated with a species identification number. These polygons were often large, diverse, complex, and overlapping. They proved to be unsuitable for our methods as they were. The first method used to mitigate these problems was to calculate centroids of the polygons using ArcMap software.
 		
-		To create a point cloud, we created an array of size $n$ with each row corresponded to a latitude from $-89.8^o$ to $89.8^o$ with a change of $.2^o$ latitude between each row. Each array contained an array of longitude elements from		 $-180^o$ to $180^0$ in increments of $\frac{.2}{\cos(latitude)}$. This gave about a million points in a grid like point cloud set with approximately $22km$ great-circle distance between adjacent points. For a given polygon, each point was assessed to determine whether it was contained in the polygon or not. This was accomplished by determining how many times a ray, starting at the point, intersected the polygon. Once it was determined that a point was in the polygon, the species id of that polygon was added to an array representing that point. This was done for all polygons and the result was an ordered point cloud, each an array of species found at that geographical coordinate. Each array has the property that the size of the array corresponds to the depth of polygons at that point. This set of points preserves more information about the shape and size of the polygon than centroids, and the fact that the point cloud is ordered was utilized to make the clustering algorithms more efficient.
+	\subsection{Point Cloud}
+		The other method to ease calculations was to create an ordered set of points on the globe and find which were contained in the polygon, then use this point cloud for the clustering algorithms. To create a point cloud, we created an array of size $n$ with each row corresponded to a latitude from $-89.8^o$ to $89.8^o$ with a change of $.2^o$ latitude between each row. Each array contained an array of longitude elements from		 $-180^o$ to $180^0$ in increments of $\frac{.2}{\cos(latitude)}$. This gave about a million points in a grid like point cloud set with approximately $22km$ great-circle distance between adjacent points. For a given polygon, each point was assessed to determine whether it was contained in the polygon or not. This was accomplished by determining how many times a ray, starting at the point, intersected the polygon. Once it was determined that a point was in the polygon, the species id of that polygon was added to an array representing that point. This was done for all polygons and the result was an ordered point cloud, each an array of species found at that geographical coordinate. Each array has the property that the size of the array corresponds to the depth of polygons at that point. This set of points preserves more information about the shape and size of the polygon than centroids, and the fact that the point cloud is ordered was utilized to make the clustering algorithms more efficient.
 		
 		Another shortcoming of the data is that information about red-list status was missing. (Red-list status is essentially whether a species is endangered or not.) To supply the needed information, the IUCN database was queried for each species represented by polygons. After that the clustering algorithms were able to do clustering on the whole data set, or just polygons associated with species on the red-list. 
 	
@@ -103,8 +105,9 @@
 			\caption{Gonzalez clusters with k = 40 using the point cloud dataset}
 		\end{figure}
 
-	\section{Density Based Clustering}
-		In this section, we ask ``Where are areas of high biodiversity?'' and ``Where are areas of high levels of species endangerment?'' Since we are asking to find where areas of greater biodiversity are located, a density based clustering algorithm is a natural choice. Additionally, a paper on the topic \cite{Joshi 11} gives evidence that density based algorithms are good option for solving polygon clustering problems. Using the centroid data, the Haversine distance metric, and suggestions from the paper \cite{Joshi 11}, an implementation of a modified version of dbscan was created in C++.
+	\section{Density Based Approach}
+	\subsection{DBSCAN}
+		Since we are asking to find where areas of greater biodiversity or greater endangerment are located, a density based clustering algorithm is a natural choice. Additionally, a paper on the topic \cite{Joshi 11} gives evidence that density based algorithms are good option for solving polygon clustering problems. Using the centroid data, the great circle distance metric, and suggestions from the paper \cite{Joshi 11}, an implementation of a modified version of dbscan was created in C++.
 		\begin{tabbing}
 			Mod\= ifie\= d db\= scan algorithm:\\
 			\> Choose distance $\epsilon$ and number of points $minPts$\\
@@ -117,17 +120,17 @@
 
 		A core point is a point with greater than $minPts$ number of points within an $\epsilon$ radius. This implementation differs from the normal dbscan because points are only included in a cluster if they qualify as a core point and they are within $\epsilon$ of a core point in the cluster. Run-time for the implementation on all  74,529 centroids was about half an hour. This implementation created clusters; however, the high density clusters do not match well with the diversity maps found on biodiversitymapping.org. This is the result of the centroid data losing too much information about the polygons.
 		
-		To improve results, an implementation of the modified dbscan for the ordered point cloud dataset was created. For this implementation, the density of an $\epsilon$ radius around a point $p$ was found by taking the average depth of $p$ and each point within $\epsilon$ of $p$. Also, $\epsilon$ was limited to values greater than $22km$ since no points were closer together than that. The resulting clusters matched nicely with maps on biodiversitymapping.org as long as $\epsilon$ was smaller than about $100km$.
+		To improve results, an implementation of the modified dbscan for the ordered point cloud dataset was created. For this implementation, the density of an $\epsilon$ radius around a point $p$ was found by taking the average depth of $p$ and each point within $\epsilon$ of $p$. Also, $\epsilon$ was limited to values greater than $22km$ since no points were closer together than that. The resulting clusters matched nicely with maps on biodiversitymapping.org as long as $\epsilon$ was smaller than about $75km$.
 		
-		At this point, the polygons were able to be clustered for some depth threshold to provide regions where biodiversity or endangerment were above that threshold. Additionally, the depth information can be used to create a heat map of biodiversity or endangerment. These are interesting, if somewhat trivial, tools to analyse the data. Now, is there a way to find and quantify the regions of high density relative to their surroundings? The next section addresses this question.
+		At this point, the polygons were able to be clustered for some depth threshold to provide regions where biodiversity or endangerment were above that threshold. Additionally, the depth information can be used to create a heat map of biodiversity. These are interesting, if somewhat trivial, tools to analyze the data. Now, is there a way to find and quantify the regions of high density relative to their surroundings? The next section addresses this question.
 		
-	\section{Density Based Cluster Persistence}
-		In topological data analysis, persistent homology is used to detect prominent features of a space and the results are shown in a persistence diagram. The ideas found in persistent homology can be adapted to find regions of high density relative to their surroundings. Instead of building complexes by increasing the $\epsilon$ ball around a point, clusters are built by decreasing the $minPts$ value and keeping $\epsilon$ constant. And instead of killing complexes by merging them into older complexes, clusters are killed by merging them with deeper clusters.
+	\subsection{Cluster Prominence}
+		In topological data analysis, persistent homology is used to detect prominent features of a space and the results are shown in a persistence diagram. The ideas found in persistent homology can be adapted to find regions of high density relative to their surroundings. Instead of building complexes by increasing the $\epsilon$ ball around a point, clusters are built by decreasing the $minPts$ value and keeping $\epsilon$ constant. And instead of killing complexes by merging them into older complexes, clusters are killed by merging them with denser clusters.
 		
 		\begin{tabbing}
-			Mod\= ifie\= d db\= scan \= alg\= orithm with persistence calculation:\\
+			Mod\= ifie\= d db\= scan \= alg\= orithm with prominence calculation:\\
 			\> choose distance $\epsilon$ and the maximum possible points, $max$, within any $\epsilon$\\
-			\> for $minPts = max..0$\\
+			\> for $minPts = max... 0$\\
 			\> \> for each point $p$, if $p$ is unlabelled and a core point\\
 			\> \> \> let $p$ and all reachable core points be in set $C$\\
 			\> \> \> \> if all points in $C$ are unlabelled\\
@@ -139,7 +142,9 @@
 			\> \> \> \> \> $\forall p_i \in C$, $label(p_i) \leftarrow label(p_0)$\\
 		\end{tabbing}
 		
-		All the clusters $c$ produced by the algorithm have a point, $(birth(c), death(c))$, that can be plotted on a $max(minPts) \times max(minPts)$ size graph.  to form a persistence diagram. Clusters with a high birth value are more dense than clusters with lower birth values. Further, $death(c)$ gives the lowest density that occurs between that point and the closest denser cluster. These can be used to find the prominence of a density cluster which is the distance between $(birth(c), death(c))$ and the diagonal. The results for mammal biodiversity are shown in the figures below. For each cluster, a point was generated by calculating the mean latitude and longitude for all points in the cluster at birth. The points corresponding to interesting points on the persistence diagram are shown on the map.
+		All the clusters $c$ produced by the algorithm have a point, $(birth(c), death(c))$, that can be plotted on a $max(minPts) \times max(minPts)$ size graph.  to form a prominence diagram. Clusters with a high birth value are more dense than clusters with lower birth values. Further, $death(c)$ gives the lowest density that occurs between that point and the closest denser cluster. These can be used to find the prominence of a density cluster which is the distance between $(birth(c), death(c))$ and the diagonal. 
+		
+		To demonstrate the effectiveness of this approach, the results for mammal biodiversity are shown in the figures below. For each newly formed cluster, a point was generated by calculating the mean latitude and longitude for all points in the cluster at birth. The points corresponding to interesting points on the persistence diagram are highlighted on the map.
 		
 		\begin{figure}[H]
 			\centering
@@ -150,7 +155,7 @@
 		\begin{figure}[H]
 			\centering
 			\includegraphics[width=8cm]{graph.png}
-			\caption{Persistence diagram of mammal density. Orange points have both high density $>100$ and high prominence $>75$. Red points have high density $>100$ and less prominence $<75$, $>10$.}
+			\caption{Prominence diagram of mammal density. Orange points have both high density $>90$ and high prominence $>75$. Red points have high density $>90$ and prominence $<75$, but $>10$.}
 		\end{figure}
 		
 	
